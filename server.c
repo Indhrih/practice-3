@@ -51,7 +51,7 @@ void urldecode(char *dst, const char *src) {
     char a, b;
     while (*src) {
         if ((*src == '%') &&
-            ((a = src[1]) && (b = src[2])) {
+            ((a = src[1]) && (b = src[2]))) {
             if (a >= 'a') a -= 'a'-'A';
             if (a >= 'A') a -= ('A' - 10);
             else a -= '0';
