@@ -46,6 +46,30 @@ void send_image(int client_socket, const char *image_path) {
     close(fd);
 }
 
+// Функция для преобразования %-последовательностей в символы
+void urldecode(char *dst, const char *src) {
+    char a, b;
+    while (*src) {
+        if ((*src == '%') &&
+            ((a = src[1]) && (b = src[2])) {
+            if (a >= 'a') a -= 'a'-'A';
+            if (a >= 'A') a -= ('A' - 10);
+            else a -= '0';
+            if (b >= 'a') b -= 'a'-'A';
+            if (b >= 'A') b -= ('A' - 10);
+            else b -= '0';
+            *dst++ = 16*a+b;
+            src+=3;
+        } else if (*src == '+') {
+            *dst++ = ' ';
+            src++;
+        } else {
+            *dst++ = *src++;
+        }
+    }
+    *dst = '\0';
+}
+
 void handle_request(int client_socket, const char *request) {
     char *student_info = strstr(request, "GET /?message=");
     if (!student_info) {
@@ -60,15 +84,13 @@ void handle_request(int client_socket, const char *request) {
         return;
     }
 
-    // Копируем сообщение как есть (без декодирования)
-    char message[256];
-    strncpy(message, student_info, end - student_info);
-    message[end - student_info] = '\0';
+    char encoded_info[256];
+    strncpy(encoded_info, student_info, end - student_info);
+    encoded_info[end - student_info] = '\0';
 
-    // Заменяем '+' на пробелы
-    for (char *p = message; *p; p++) {
-        if (*p == '+') *p = ' ';
-    }
+    // Декодируем URL-кодированную строку
+    char decoded_info[256];
+    urldecode(decoded_info, encoded_info);
 
     char response[2048];
     snprintf(response, sizeof(response),
@@ -81,7 +103,7 @@ void handle_request(int client_socket, const char *request) {
              "<h1>%s</h1>"
              "<img src='/gerb' alt='Герб МИРЭА' style='width: 300px; margin-top: 20px;'>"
              "</body></html>",
-             message);
+             decoded_info);
 
     send(client_socket, response, strlen(response), 0);
 }
